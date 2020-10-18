@@ -1,0 +1,184 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <assert.h>
+
+#define FOR_STR_CHR(s, val) for (; (s) != NULL && *((s) + 1) != '\0'; (s) = strchr(s, val))
+#define POINTER_ON_FUNCTION(func) int (*func)(const char* x, const char* y)
+
+long getNumberOfSymbols(FILE* fil) //returns quantity of strings from FILE
+{
+    if (fil == NULL)
+    {
+        printf("/n ERROR Text file is not open in file %s, line: %ld /n", __FILE__, __LINE__);
+        exit(-1);
+    }
+
+    long currentIndex = ftell(fil);
+    fseek(fil, 0, SEEK_END);
+
+    long ans = ftell(fil);
+    fseek(fil, currentIndex, SEEK_SET);
+
+    return ans;
+}
+struct structOfString
+{
+    char* index;
+    int length;
+};
+
+int GetNumberOfStrings(const char* fileInString){
+    int colStr = 0;
+    const char* s = fileInString - 1;
+    //for (; (s) != NULL && *((s) + 1) != '\0'; (s) = strchr(s, '\n'))
+    FOR_STR_CHR(s, '\n')
+    {
+        s++;
+        if (*s != '\n')
+            colStr++;
+        //printf(s);
+        //printf("\n !!!! %d\n", s - fileInString);
+    }
+    return colStr;
+}
+
+void SplitToLines(char* line, char** arrayOfLines){
+    int currLine = 0;
+    char* s = line - 1;
+
+    FOR_STR_CHR(s, '\n') {
+        if (currLine != 0)
+            *(s) = '\0';
+
+        s++;
+
+        if (*(s) != '\n') {
+            arrayOfLines[currLine] = s;
+            currLine++;
+        }
+    }
+}
+
+int GetRightPointer(char** array, int rightPointer, int pivot, POINTER_ON_FUNCTION(CompareFunc)){
+    while(rightPointer > pivot) {
+        if ((*CompareFunc)(*(array + pivot), *(array + rightPointer))) //if x rather y
+            return rightPointer;
+        else
+            rightPointer--;
+    }
+    return pivot;
+}
+
+void Swap(char** array, int pointer1, int pointer2){
+    char* x = array[pointer1];
+    array[pointer1] = array[pointer2];
+    array[pointer2] = x;
+}
+
+void ReplacePivot(int* pivot, char** array, int leftPointer, int rightPointer){
+
+    int newPivot = (leftPointer + rightPointer + 1) / 2;
+    if (newPivot != *pivot) {
+        Swap(array, *pivot, newPivot);
+        *pivot = newPivot;
+    }
+}
+
+void Quicksort(char** array, int colStr, POINTER_ON_FUNCTION(CompareFunc)) {
+    int leftPointer = 0;
+    int rightPointer = colStr - 1;
+    int pivot = colStr / 2;
+
+    while (1) {
+        if ((*CompareFunc)(*(array + leftPointer), *(array + pivot))) { //if x rather y
+            //fix leftPointer
+            while (1) {
+                rightPointer = GetRightPointer(array, rightPointer, pivot, *CompareFunc);
+                if (rightPointer == pivot) {
+                    ReplacePivot(&pivot, array, leftPointer, rightPointer);
+                    if (pivot == rightPointer)
+                        Swap(array, leftPointer, rightPointer);
+                        break;
+                } else {
+                    Swap(array, leftPointer, rightPointer);
+                    break;
+                }
+            }
+        }
+        leftPointer++;
+        if (leftPointer == pivot) {
+            ReplacePivot(&pivot, array, leftPointer, rightPointer);
+            if (pivot == leftPointer) {
+                if (pivot > 1)
+                    Quicksort(array, pivot, *CompareFunc);
+
+                if (pivot + 1 < colStr - 1)
+                    Quicksort(array + pivot + 1, colStr, *CompareFunc);
+                return;
+            }
+        }
+    }
+}
+
+int CompareStrBegins(const char* str1, const char* str2){
+    if (strcmp(str1, str2) <= 0)
+        return 0;
+    else
+        return 1;
+}
+int CompareStrEnds(const char* str1, const char* str2){
+    char s1[strlen(str1)];
+    char s2[strlen(str2)];
+
+    strcpy(s1, str1);
+    strcpy(s2, str1);
+
+    strrev(s1);
+    strrev(s2);
+
+    if (strcmp(s1, s2) <= 0)
+        return 0;
+    else
+        return 1;
+}
+
+int main() {
+    FILE *poem;
+    poem = fopen("EvgOneg.txt", "r");
+    assert(poem != NULL);
+
+    long numberOfSymbols = getNumberOfSymbols(poem);
+    printf("\n NUMSYM %ld \n", numberOfSymbols);
+
+    char* fileInString = (char*)calloc(sizeof(char)*(numberOfSymbols + 1), sizeof(char)); //REALLOC
+    fread(fileInString, sizeof(char), numberOfSymbols, poem);
+    fclose(poem);
+
+    *(fileInString + numberOfSymbols) = '\0';
+
+    int colStr = GetNumberOfStrings(fileInString);
+
+    char* poemLines[colStr];
+    SplitToLines(fileInString, poemLines);
+
+    printf("\n poemLines: \n");
+    for (int i = 0; i < colStr; i++)
+        printf("%s \n", poemLines[i]);
+
+    Quicksort(poemLines, colStr, CompareStrEnds);
+
+    printf("\n poemLines 2: \n");
+    for (int i = 0; i < colStr; i++)
+        printf("%s \n", poemLines[i]);
+
+    poem = fopen("EvgOnegNew.txt", "w");
+    for (int i = 0; i < colStr; i++)
+        fprintf(poem, "%s", poemLines[i]);
+    fclose(poem);
+
+    free(fileInString);
+    return 0;
+}
+
