@@ -146,7 +146,7 @@ int CompareStrEnds(const char* str1, const char* str2){
 
 int main() {
     FILE *poem;
-    poem = fopen("EvgOneg.txt", "r");
+    poem = fopen("EvgeniyOnegin.txt", "r");
     assert(poem != NULL);
 
     long numberOfSymbols = getNumberOfSymbols(poem);
@@ -173,7 +173,7 @@ int main() {
     for (int i = 0; i < colStr; i++)
         printf("%s \n", poemLines[i]);
 
-    poem = fopen("EvgOnegNew.txt", "w");
+    poem = fopen("EvgOnegSorted.txt", "w");
     for (int i = 0; i < colStr; i++)
         fprintf(poem, "%s", poemLines[i]);
     fclose(poem);
