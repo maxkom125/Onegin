@@ -7,11 +7,18 @@
 #define FOR_STR_CHR(s, val) for (; (s) != NULL && *((s) + 1) != '\0'; (s) = strchr(s, val))
 #define POINTER_ON_FUNCTION(func) int (*func)(const char* x, const char* y)
 
+void WriteToFile(FILE* file, char** lines, int colStr) {
+    for (int i = 0; i < colStr; i++) {
+        fprintf(file, "%s \n", lines[i]);
+    }
+    fprintf(file, "\n \n");
+}
+
 long getNumberOfSymbols(FILE* fil) //returns quantity of strings from FILE
 {
     if (fil == NULL)
     {
-        printf("/n ERROR Text file is not open in file %s, line: %ld /n", __FILE__, __LINE__);
+        printf("/n ERROR Text file is not open in file %s, line: %d /n", __FILE__, __LINE__);
         exit(-1);
     }
 
@@ -23,11 +30,6 @@ long getNumberOfSymbols(FILE* fil) //returns quantity of strings from FILE
 
     return ans;
 }
-struct structOfString
-{
-    char* index;
-    int length;
-};
 
 int GetNumberOfStrings(const char* fileInString){
     int colStr = 0;
@@ -72,6 +74,10 @@ int GetRightPointer(char** array, int rightPointer, int pivot, POINTER_ON_FUNCTI
 }
 
 void Swap(char** array, int pointer1, int pointer2){
+    assert(array[pointer1]);
+    if (array[pointer2] == NULL)
+        printf("!!!!!!!!!!!!!!!!!!!!!!! %s %d %s %d", __PRETTY_FUNCTION__, pointer2, array[pointer1], pointer1);
+    assert(array[pointer2]);
     char* x = array[pointer1];
     array[pointer1] = array[pointer2];
     array[pointer2] = x;
@@ -92,16 +98,23 @@ void Quicksort(char** array, int colStr, POINTER_ON_FUNCTION(CompareFunc)) {
     int pivot = colStr / 2;
 
     while (1) {
+        if (*(array + pivot) == NULL)
+            printf("!!!!!!!!!!!!! %d", pivot);
         if ((*CompareFunc)(*(array + leftPointer), *(array + pivot))) { //if x rather y
             //fix leftPointer
             while (1) {
                 rightPointer = GetRightPointer(array, rightPointer, pivot, *CompareFunc);
                 if (rightPointer == pivot) {
                     ReplacePivot(&pivot, array, leftPointer, rightPointer);
-                    if (pivot == rightPointer)
-                        Swap(array, leftPointer, rightPointer);
+                    if (pivot == rightPointer) {//leftPointer + 1 == rightPointer
+                        Swap(array, leftPointer, pivot);
+                        pivot = leftPointer;
+                        rightPointer = pivot;
+                        leftPointer--; //next operation ++
                         break;
-                } else {
+                    }
+                }
+                else {
                     Swap(array, leftPointer, rightPointer);
                     break;
                 }
@@ -114,8 +127,8 @@ void Quicksort(char** array, int colStr, POINTER_ON_FUNCTION(CompareFunc)) {
                 if (pivot > 1)
                     Quicksort(array, pivot, *CompareFunc);
 
-                if (pivot + 1 < colStr - 1)
-                    Quicksort(array + pivot + 1, colStr, *CompareFunc);
+                if (colStr - pivot - 1 > 1)
+                    Quicksort(array + pivot + 1, colStr - pivot - 1, *CompareFunc);
                 return;
             }
         }
@@ -123,17 +136,23 @@ void Quicksort(char** array, int colStr, POINTER_ON_FUNCTION(CompareFunc)) {
 }
 
 int CompareStrBegins(const char* str1, const char* str2){
+    assert(str1);
+    if (str2 == NULL)
+        printf("!!!!!!!!!!!!!!!!!!!!!!!");
+    assert(str2);
     if (strcmp(str1, str2) <= 0)
         return 0;
     else
         return 1;
 }
 int CompareStrEnds(const char* str1, const char* str2){
+    assert(str1);
+    assert(str2);
     char s1[strlen(str1)];
     char s2[strlen(str2)];
 
     strcpy(s1, str1);
-    strcpy(s2, str1);
+    strcpy(s2, str2);
 
     strrev(s1);
     strrev(s2);
@@ -147,6 +166,8 @@ int CompareStrEnds(const char* str1, const char* str2){
 int main() {
     FILE *poem;
     poem = fopen("EvgeniyOnegin.txt", "r");
+    //poem = fopen("EvgOneg.txt", "r");
+
     assert(poem != NULL);
 
     long numberOfSymbols = getNumberOfSymbols(poem);
@@ -161,21 +182,39 @@ int main() {
     int colStr = GetNumberOfStrings(fileInString);
 
     char* poemLines[colStr];
+    char* poemLines1[colStr];
+    char* poemLines2[colStr];
+
     SplitToLines(fileInString, poemLines);
 
-    printf("\n poemLines: \n");
-    for (int i = 0; i < colStr; i++)
-        printf("%s \n", poemLines[i]);
+    for (int i = 0; i < colStr; i++) {
+        poemLines1[i] = poemLines[i];
+        poemLines2[i] = poemLines[i];
+    }
 
-    Quicksort(poemLines, colStr, CompareStrEnds);
-
-    printf("\n poemLines 2: \n");
-    for (int i = 0; i < colStr; i++)
+    printf("\n colStr: %d; poemLines: \n", colStr);
+    for (int i = 0; i < colStr; i++) {
         printf("%s \n", poemLines[i]);
+        if (*poemLines[i] == NULL)
+            printf("!!! \n !!! \n !!! \n !!! %d", i);
+    }
+
+    Quicksort(poemLines1, colStr, CompareStrBegins);
+    Quicksort(poemLines2, colStr, CompareStrEnds);
+
+    printf("\n poemLines CompareBegins: \n");
+    for (int i = 0; i < colStr; i++)
+        printf("%s \n", poemLines1[i]);
+
+    printf("\n poemLines CompareEnds: \n");
+    for (int i = 0; i < colStr; i++)
+        printf("%s \n", poemLines2[i]);
 
     poem = fopen("EvgOnegSorted.txt", "w");
-    for (int i = 0; i < colStr; i++)
-        fprintf(poem, "%s", poemLines[i]);
+    WriteToFile(poem, poemLines1, colStr);
+    //WriteToFile(poem, poemLines2, colStr);
+    WriteToFile(poem, poemLines, colStr);
+
     fclose(poem);
 
     free(fileInString);
