@@ -1,4 +1,7 @@
 # Onegin
-Файл должен называться EvgeniyOnegin.txt  
 
-Выводит все в файл EvgOnegSorted.txt
+Task: Sort the poem.
+
+File should be named EvgeniyOnegin.txt  
+
+Otput file: EvgOnegSorted.txt
